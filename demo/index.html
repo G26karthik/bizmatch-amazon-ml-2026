@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Business Entity Resolution · Team Minutes</title>
+<style>
+:root {
+  --bg: #f4f6f9; --surface: #ffffff; --sunk: #eef1f5; --ink: #142030; --muted: #586679; --line: #dce2ea;
+  --accent: #1d5bbf; --accent-soft: #e3ecfb; --match: #0f7a57; --match-soft: #dff3ea; --decoy: #b9420f;
+  --decoy-soft: #fbe8de; --miss: #8a5a00; --miss-soft: #f8edd3; --term-bg: #0f1722; --term-ink: #cfe0f5;
+  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --display: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --mono: "Cascadia Mono", "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e131a; --surface: #151c25; --sunk: #1b2430; --ink: #e5ebf2; --muted: #95a3b5; --line: #273342;
+    --accent: #7aaeff; --accent-soft: #1d2c44; --match: #45d29b; --match-soft: #15342a; --decoy: #ff9466;
+    --decoy-soft: #3a2219; --miss: #f0c35a; --miss-soft: #352c16; --term-bg: #0a0f15; --term-ink: #cfe0f5;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); }
+.wrap { max-width: 1140px; margin: 0 auto; padding-inline: 20px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 650; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; font-weight: 650; }
+p { margin: 0; max-width: 70ch; }
+code, .mono { font-family: var(--mono); font-size: 0.9em; }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* hero */
+.hero { padding-block: 56px 36px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.hero-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; align-items: end; }
+.eyebrow { font: 600 0.78rem/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.hero h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 700; letter-spacing: -0.02em; margin-block: 14px 16px; }
+.lede { font-size: 1.15rem; color: var(--muted); }
+.score { border-left: 3px solid var(--accent); padding-left: 20px; }
+.score b { display: block; font: 700 clamp(2.6rem, 6vw, 4rem)/1 var(--display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.score span { color: var(--muted); font-size: 0.95rem; }
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 40px; }
+.facts div { border-top: 1px solid var(--line); padding-top: 12px; }
+.facts b { display: block; font: 650 1.5rem/1.2 var(--display); font-variant-numeric: tabular-nums; }
+.facts span { font-size: 0.88rem; color: var(--muted); }
+
+nav.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+nav.top .wrap { display: flex; gap: 4px; overflow-x: auto; padding-block: 8px; }
+nav.top a { color: var(--muted); text-decoration: none; font-size: 0.92rem; padding: 6px 12px; border-radius: 6px; white-space: nowrap; }
+nav.top a:hover { background: var(--sunk); color: var(--ink); }
+nav.top a b { color: var(--accent); font-weight: 600; margin-right: 6px; font-variant-numeric: tabular-nums; }
+
+section { padding-block: 64px; border-bottom: 1px solid var(--line); }
+.sec-head { display: grid; gap: 12px; margin-bottom: 32px; }
+.sec-num { font: 600 0.8rem/1 var(--mono); color: var(--accent); letter-spacing: 0.08em; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+.cols > *, .stack > * { min-width: 0; }
+.imp { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: center; font-size: 0.86rem; }
+.imp code { font-size: 0.8rem; }
+.imp .bar { height: 10px; }
+.imp small { color: var(--muted); display: block; font-size: 0.78rem; line-height: 1.3; }
+.stack { display: grid; gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+.panel h3 { margin-bottom: 10px; }
+.label { font: 600 0.72rem/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+ul.clean { margin: 0; padding-left: 18px; display: grid; gap: 6px; max-width: 70ch; }
+
+/* records */
+.rec { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; padding: 10px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); align-items: baseline; }
+.rec .nm { font-weight: 600; overflow-wrap: anywhere; }
+.rec .ad { grid-column: 2; color: var(--muted); font-size: 0.92rem; overflow-wrap: anywhere; }
+.tag { font: 600 0.72rem/1 var(--mono); padding: 4px 6px; border-radius: 4px; background: var(--sunk); color: var(--muted); white-space: nowrap; }
+.tag.s1 { background: var(--accent-soft); color: var(--accent); }
+.rec.copy { border-color: color-mix(in srgb, var(--match) 40%, var(--line)); }
+.rec.decoy { border-color: color-mix(in srgb, var(--decoy) 40%, var(--line)); }
+.pill { display: inline-block; font: 600 0.72rem/1.4 var(--sans); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.copy, .pill.TP { background: var(--match-soft); color: var(--match); }
+.pill.decoy, .pill.FP { background: var(--decoy-soft); color: var(--decoy); }
+.pill.FN { background: var(--miss-soft); color: var(--miss); }
+.pill.TN { background: var(--sunk); color: var(--muted); }
+.flow-ex { display: grid; gap: 8px; }
+.flow-ex .arrow { font-size: 0.85rem; color: var(--muted); padding-left: 12px; }
+
+pre.snip { margin: 0; background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  font: 0.85rem/1.55 var(--mono); overflow-x: auto; }
+
+/* tables */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 0.74rem/1.2 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--sunk); }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+tr.hl td { background: var(--accent-soft); }
+.bar { height: 8px; border-radius: 4px; background: var(--sunk); min-width: 80px; position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 4px; }
+.bar.ok i { background: var(--match); }
+.bar.bad i { background: var(--decoy); }
+
+/* controls */
+button, select, input[type=text] { font: inherit; font-size: 0.92rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; }
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; padding: 10px 18px; }
+@media (prefers-color-scheme: dark) { button.primary { color: #0b1220; } }
+button:disabled { opacity: 0.55; cursor: progress; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.toolbar input[type=text] { flex: 1 1 200px; min-width: 0; }
+
+/* method flow */
+.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; counter-reset: step; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; position: relative; }
+.step::before { counter-increment: step; content: counter(step, decimal-leading-zero); font: 600 0.75rem/1 var(--mono); color: var(--muted); }
+.step h3 { font-size: 1rem; margin-block: 6px 6px; }
+.step p { font-size: 0.88rem; color: var(--muted); }
+.step.live { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.step.live::after { content: "runs live"; position: absolute; top: 12px; right: 12px; font: 600 0.68rem/1 var(--sans);
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 4px 6px; border-radius: 4px; }
+.norm-out { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 0.92rem; margin-top: 12px; }
+.norm-out dt { color: var(--muted); }
+.norm-out dd { margin: 0; font-family: var(--mono); overflow-wrap: anywhere; }
+
+/* live run */
+.stepper { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-block: 16px; }
+.st { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); }
+.st b { display: block; font-size: 0.9rem; }
+.st span { font: 0.8rem var(--mono); color: var(--muted); }
+.st.run { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.st.done { border-color: color-mix(in srgb, var(--match) 50%, var(--line)); }
+.st.done span { color: var(--match); }
+.term { background: var(--term-bg); color: var(--term-ink); border-radius: 10px; padding: 14px 16px; font: 0.8rem/1.5 var(--mono);
+  height: 260px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.term .stg { color: #7fd6a6; }
+.term .err { color: #ff9a85; }
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.metric { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.metric b { display: block; font: 650 1.6rem/1.15 var(--display); font-variant-numeric: tabular-nums; }
+.metric span { font-size: 0.84rem; color: var(--muted); }
+.metric.key { border-color: var(--accent); background: var(--accent-soft); }
+.note { border-left: 3px solid var(--miss); background: var(--miss-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 0.93rem; }
+.note p { max-width: none; }
+
+/* F0.5 */
+.formula { font: 1.25rem/1.6 var(--mono); background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 18px 22px; overflow-x: auto; white-space: nowrap; }
+.calc { font: 0.95rem/1.8 var(--mono); background: var(--sunk); border-radius: 8px; padding: 12px 16px; overflow-x: auto; white-space: nowrap; }
+.calc .big { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+.whatif { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 0.88rem; }
+.whatif span { background: var(--sunk); border-radius: 6px; padding: 4px 10px; }
+.check { display: inline-block; font-size: 0.88rem; padding: 6px 10px; border-radius: 6px; background: var(--match-soft); color: var(--match); font-weight: 600; }
+.check.fail { background: var(--decoy-soft); color: var(--decoy); }
+td input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+td.rec-cell .nm { font-weight: 600; overflow-wrap: anywhere; }
+td.rec-cell .ad { color: var(--muted); font-size: 0.86rem; overflow-wrap: anywhere; }
+.code-panel pre { max-height: 360px; }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--muted); font: 11px var(--sans); }
+svg .ink { fill: var(--ink); }
+svg .grid { stroke: var(--line); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.84rem; color: var(--muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+
+footer { padding-block: 40px 60px; color: var(--muted); font-size: 0.9rem; }
+footer pre { margin-top: 10px; }
+
+@media (max-width: 900px) {
+  .hero-grid, .cols { grid-template-columns: 1fr; }
+  .facts, .metrics { grid-template-columns: repeat(2, 1fr); }
+  .flow { grid-template-columns: repeat(2, 1fr); }
+  .stepper { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 520px) {
+  .wrap { padding-inline: 16px; }
+  .flow, .facts { grid-template-columns: 1fr; }
+  .formula { font-size: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">Amazon ML Challenge 2026 · Team Minutes</div>
+        <h1>Business Entity Resolution</h1>
+        <p class="lede">Three lists of business records with no shared identifiers. For every business in the reference
+          list, find all of its noisy copies in the other two lists, and leave the look-alikes alone.</p>
+      </div>
+      <div class="score">
+        <b>0.990162</b>
+        <span>our strongest public leaderboard score (macro F0.5). The final submission builds on this run.</span>
+      </div>
+    </div>
+    <div class="facts">
+      <div><b class="num">12.5 M</b><span>training records across three sources</span></div>
+      <div><b class="num">5.4</b><span>candidates per business after blocking</span></div>
+      <div><b class="num">98.75%</b><span>of true matches kept by blocking</span></div>
+      <div><b class="num">0.9913</b><span>US and India on test, equal to our validation</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="top">
+  <div class="wrap">
+    <a href="#problem"><b>01</b>Problem</a>
+    <a href="#data"><b>02</b>Dataset</a>
+    <a href="#method"><b>03</b>Method</a>
+    <a href="#run"><b>04</b>Live run</a>
+    <a href="#f05"><b>05</b>F0.5 metric</a>
+    <a href="#results"><b>06</b>Results</a>
+  </div>
+</nav>
+
+<main>
+<!-- 01 PROBLEM -->
+<section id="problem">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">01 · THE PROBLEM</div>
+      <h2>Which records describe the same business?</h2>
+    </div>
+    <div class="cols">
+      <div class="stack">
+        <p><b>Source 1</b> is a clean reference list of businesses (name, address, country). <b>Source 2</b> and
+          <b>Source 3</b> hold copies of those businesses written with typos, abbreviations, reordered addresses,
+          different scripts and missing fields, mixed with <b>decoys</b>: records built to look like a real business
+          but belonging to none.</p>
+        <p>For every Source 1 business we must list the IDs of its copies. A business can have zero copies, and the
+          metric rewards an empty answer in that case. Training data covers the US and India; the test set also
+          includes France, with no labels at all.</p>
+        <p>Our key observation: every Source 2/3 record belongs to <b>at most one</b> business (true for all 7.64
+          million training pairs). So instead of comparing businesses to records, we ask each record a single
+          question, <i>"which business are you a copy of, if any?"</i>, and group the answers.</p>
+        <div>
+          <div class="label" style="margin-bottom:8px">Required output (one row per Source 1 business)</div>
+          <pre class="snip">source1_entity_id	matched_entity_ids
+S1-000000001	S2-000000011,S2-000000012,S3-000000013
+S1-000000002	</pre>
+        </div>
+      </div>
+      <div class="flow-ex" aria-label="Example business with copies and a decoy">
+        <div class="label">An illustrative example (fictional, in the style of the training data)</div>
+        <div class="rec"><span class="tag s1">S1</span><span class="nm">Bluebird Garden Supply Corp</span><span class="ad">TX, Austin, 42 Example Lane</span></div>
+        <div class="arrow">its copies in Sources 2 and 3</div>
+        <div class="rec copy"><span class="tag">S3</span><span class="nm">Zorvane Co f/k/a Bluebird Garden Supply Corp <span class="pill copy">copy</span></span><span class="ad">42 Example Lane, Austin, TX</span></div>
+        <div class="rec copy"><span class="tag">S2</span><span class="nm">Bluebird-Garden Supply Corp <span class="pill copy">copy</span></span><span class="ad">42 EXAMPLE LANE, PMB 100, AUSTIN, TX</span></div>
+        <div class="rec copy"><span class="tag">S2</span><span class="nm">Bluebird Gsrdne Supply Corp <span class="pill copy">copy</span></span><span class="ad">42 EXAMPLE LN, PMB 100, AUSTIN, TX</span></div>
+        <div class="arrow">a decoy: same street, different legal form and house number</div>
+        <div class="rec decoy"><span class="tag">S2</span><span class="nm">Bluebird Garden Supply Ltd. <span class="pill decoy">decoy</span></span><span class="ad">TX, 51 EXAMPLE LN, AUSTIN</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 DATA -->
+<section id="data">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">02 · DATASET</div>
+      <h2>Twelve million records, and a slice we can run live</h2>
+      <p class="muted">The full data is far too large for a laptop demo, so we cut a geographic slice: every business
+        in Austin, Tucson, Rajkot and Vadodara, all of their true copies, and every other record in those cities.
+        Keeping whole cities keeps the hard decoys (same street, sibling names) in the sample.</p>
+    </div>
+    <div class="cols">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th></th><th class="r">Full training set</th><th class="r">Demo slice</th></tr></thead>
+          <tbody id="data-table">
+            <tr><td>Source 1 businesses</td><td class="r">2,206,821</td><td class="r" data-k="s1">…</td></tr>
+            <tr><td>Source 2 records</td><td class="r">5,034,616</td><td class="r" data-k="s2">…</td></tr>
+            <tr><td>Source 3 records</td><td class="r">5,285,603</td><td class="r" data-k="s3">…</td></tr>
+            <tr><td>True (business, record) pairs</td><td class="r">7,638,365</td><td class="r" data-k="true_pairs">…</td></tr>
+            <tr><td>Copies per business</td><td class="r">3.46</td><td class="r" data-k="per">…</td></tr>
+            <tr><td>Countries</td><td class="r">US, India (+ France in test)</td><td class="r">US, India</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <h3>How many copies does a business have?</h3>
+        <p class="muted" style="font-size:.9rem">Demo slice, after hiding 19% of businesses (see Method). Businesses with
+          zero copies must get an empty answer.</p>
+        <div id="hist-copies"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:24px">
+      <h3>Record explorer: a business and the look-alikes blocking found for it</h3>
+      <p class="muted" style="font-size:.9rem;margin-bottom:12px">These are the top candidates that the TF-IDF searches
+        retrieved for one business, ranked by similarity score. Green rows are true copies; the rest are records that
+        look similar but belong elsewhere. Telling them apart is the model's job.</p>
+      <div class="toolbar">
+        <button id="ex-prev">◀ Previous</button>
+        <button id="ex-next">Next ▶</button>
+        <button id="ex-rand">Random</button>
+        <span class="muted num" id="ex-pos"></span>
+      </div>
+      <div id="ex-s1"></div>
+      <div class="tbl-wrap" style="margin-top:10px"><table>
+        <thead><tr><th class="r">#</th><th>Src</th><th>Record</th><th style="width:22%">TF-IDF score</th><th>Truth</th></tr></thead>
+        <tbody id="ex-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 METHOD -->
+<section id="method">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">03 · METHOD</div>
+      <h2>From twelve million records to one decision per business</h2>
+      <p class="muted">Each step narrows the problem for the next. Steps marked <b>runs live</b> are executed on the
+        demo slice in section 04 with exactly the code from our submission.</p>
+    </div>
+    <div class="flow">
+      <div class="step live"><h3>Normalise</h3><p>Transliterate Indian scripts, expand abbreviations, split house numbers, build consonant skeletons.</p></div>
+      <div class="step live"><h3>Block</h3><p>Three TF-IDF searches per country (name + address, address, name). Only plausible pairs survive.</p></div>
+      <div class="step live"><h3>Features</h3><p>46 signals per pair: fuzzy name and address similarity, house numbers, ranks, competition between records.</p></div>
+      <div class="step live"><h3>LightGBM cascade</h3><p>A small model prunes weak pairs, a larger one scores the rest. Each record picks its best business.</p></div>
+      <div class="step"><h3>Bi-encoder</h3><p>Fine-tuned multilingual-e5 adds candidates the text searches miss (recall 98.9%).</p></div>
+      <div class="step"><h3>7 cross-encoders</h3><p>Transformer models re-read the uncertain pairs; a stacker combines every score.</p></div>
+      <div class="step live"><h3>Expected-F0.5 decision</h3><p>For each business, choose the set of records that maximises the expected metric.</p></div>
+      <div class="step"><h3>France + calibration</h3><p>Label-free rules from the data generator, test-like recalibration with two LoRA-tuned 7B judges.</p></div>
+    </div>
+
+    <div class="cols" style="margin-top:28px">
+      <div class="panel">
+        <h3>Try the normaliser</h3>
+        <p class="muted" style="font-size:.9rem">Calls <code>ber.normalize</code> on the server. Different spellings
+          of one business collapse to the same skeleton, which is what lets blocking find them.</p>
+        <div class="toolbar" style="margin-top:12px;margin-bottom:0">
+          <input type="text" id="nm-in" value="laaiph investtmentt" aria-label="Business name">
+          <input type="text" id="ad-in" value="42 EXAMPLE LANE, PMB 100, AUSTIN, TX" aria-label="Address">
+        </div>
+        <div class="toolbar" style="margin-top:8px">
+          <span class="label">Try:</span>
+          <button class="nm-try" data-n="Life Investment Pvt. Ltd.">Life Investment Pvt. Ltd.</button>
+          <button class="nm-try" data-n="राम मार्केटिंग प्राइवेट लिमिटेड">राम मार्केटिंग प्राइवेट लिमिटेड</button>
+          <button class="nm-try" data-n="Bluebird-Garden Supply Corp">Bluebird-Garden Supply Corp</button>
+        </div>
+        <dl class="norm-out" id="nm-out"></dl>
+      </div>
+      <div class="panel">
+        <h3>Validation we could trust</h3>
+        <ul class="clean">
+          <li><b>Split by business, never by pair.</b> A business and all its records go to validation when
+            <code>hash(id) % 10 == 0</code>.</li>
+          <li><b>Two halves.</b> Half A chooses every setting; half B is only used to report. If A and B agree, we are not
+            fooling ourselves.</li>
+          <li><b>Look like the test set.</b> The test set has more unmatched records (40% vs 26%), so we hide 19% of
+            businesses during training. Their records stay, but become unmatched.</li>
+          <li><b>It worked:</b> US and India scored 0.9913 on the test set, the same as validation half B.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 LIVE RUN -->
+<section id="run">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">04 · LIVE RUN</div>
+      <h2>Re-run the pipeline on the slice</h2>
+      <p class="muted">The button starts <code>src/ber/pipeline.py</code> (prep, retrieve, features, train) on
+        the demo slice, the same functions used for the full submission. It takes about a minute. Results below are
+        from the last completed run and refresh when the new one finishes. Multithreaded training makes the fourth
+        decimal vary slightly between runs.</p>
+    </div>
+    <div class="toolbar">
+      <button class="primary" id="run-btn">▶ Run pipeline</button>
+      <span class="muted" id="run-msg"></span>
+    </div>
+    <div class="stepper" id="stepper"></div>
+    <div class="term" id="term" aria-live="polite">Press "Run pipeline" to stream the log here.</div>
+
+    <h3 style="margin-block:28px 12px">Results on held-out businesses <span class="muted" id="run-when" style="font-weight:400;font-size:.9rem"></span></h3>
+    <div class="metrics" id="metrics"></div>
+    <div class="cols" style="margin-top:20px">
+      <div class="panel">
+        <h3>What the model relies on most</h3>
+        <p class="muted" style="font-size:.9rem">LightGBM gain importance, top 12 of 46 features.</p>
+        <div id="imp"></div>
+      </div>
+      <div class="stack">
+        <div class="note"><p><b>Scope of this live run.</b> It is our core system: normalisation, three TF-IDF searches, 46 features,
+          the two-stage LightGBM cascade and the decision rule, with the same validation design. The bi-encoder,
+          seven cross-encoders, stacker, France rules and LoRA judges need GPUs and hours, so they are not part of
+          it. At full scale this core scored 0.963 on validation and 0.951 on the leaderboard; the remaining steps
+          took us to 0.990162.</p></div>
+        <div class="panel">
+          <h3>Reading the numbers</h3>
+          <ul class="clean" style="font-size:.93rem">
+            <li><b>Retrieval recall</b>: share of true copies that blocking put in the candidate list.</li>
+            <li><b>Oracle F0.5</b>: the best score possible if the model were perfect on those candidates.</li>
+            <li><b>Half A / half B</b>: settings are chosen on A; B is untouched, so A ≈ B means no overfitting.</li>
+            <li><b>Empty answer</b>: the score of predicting nothing for everyone, a sanity baseline.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 F0.5 -->
+<section id="f05">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">05 · THE METRIC</div>
+      <h2>How F0.5 is calculated</h2>
+      <p class="muted">The score is computed <b>per business</b> and then averaged over all businesses (macro
+        average). F0.5 weighs precision more than recall, so a wrong match hurts more than a missed one.</p>
+    </div>
+    <div class="cols">
+      <div class="stack">
+        <div class="formula">F0.5 = 1.25·TP / (1.25·TP + FP + 0.25·FN)</div>
+        <ul class="clean" style="font-size:.95rem">
+          <li><b>TP</b>: predicted records that really are copies of this business.</li>
+          <li><b>FP</b>: predicted records that are not (wrong matches).</li>
+          <li><b>FN</b>: true copies we did not predict (misses).</li>
+          <li>A business with <b>no copies</b> scores 1 for an empty prediction and 0 for anything else.</li>
+          <li>It is the usual F<sub>β</sub> = (1+β²)·P·R / (β²·P + R) with β = 0.5, rewritten in counts.</li>
+          <li>Final score = mean of the per-business F0.5 over every Source 1 business.</li>
+        </ul>
+      </div>
+      <div class="panel code-panel">
+        <h3>The exact code we used (<code>src/ber/metric.py</code>)</h3>
+        <pre class="snip" id="code-metric">loading…</pre>
+        <div style="margin-top:10px" id="metric-check"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:28px">
+      <h3>Business inspector: tick or untick records and watch the score change</h3>
+      <p class="muted" style="font-size:.9rem;margin-bottom:12px">Each held-out business from the live run, with the
+        records whose best match it was. Ticks start at the model's actual decision. True copies the model never assigned
+        here appear at the bottom.</p>
+      <div class="toolbar">
+        <select id="in-filter" aria-label="Filter businesses">
+          <option value="mixed">Has both a wrong match and a miss</option>
+          <option value="fp">Has a wrong match (FP)</option>
+          <option value="fn">Has a miss (FN)</option>
+          <option value="perfect">Perfect (F0.5 = 1)</option>
+          <option value="empty">No copies at all</option>
+          <option value="all">All held-out businesses</option>
+        </select>
+        <input type="text" id="in-search" placeholder="Search name or ID…" aria-label="Search">
+        <button id="in-prev">◀</button><button id="in-next">▶</button><button id="in-rand">Random</button>
+        <button id="in-reset">Reset ticks</button>
+        <span class="muted num" id="in-pos"></span>
+      </div>
+      <div id="in-s1"></div>
+      <div class="tbl-wrap" style="margin-top:10px"><table>
+        <thead><tr><th>Pred.</th><th>Src</th><th>Record</th><th style="width:18%">Model probability</th><th>Truth</th><th>Outcome</th></tr></thead>
+        <tbody id="in-body"></tbody>
+      </table></div>
+      <div class="cols" style="margin-top:16px">
+        <div>
+          <div class="label" style="margin-bottom:6px">Calculation</div>
+          <div class="calc" id="in-calc"></div>
+          <div class="whatif" id="in-whatif"></div>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:6px">Expected F0.5 if we keep the top k records</div>
+          <div id="in-ef"></div>
+          <p class="muted" style="font-size:.85rem;margin-top:6px">Treating each probability as independent, the
+            expected score of keeping the top k records is computed exactly (a Poisson-binomial dynamic programme, as in
+            <code>src/ber/decide.py</code>). The final system keeps the best k for every business.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cols" style="margin-top:28px">
+      <div class="panel">
+        <h3>From one business to the final score</h3>
+        <p class="muted" style="font-size:.9rem">Per-business F0.5 over all held-out businesses. The macro score is
+          simply their mean.</p>
+        <div id="hist-f05"></div>
+      </div>
+      <div class="panel">
+        <h3>Choosing the decision threshold</h3>
+        <p class="muted" style="font-size:.9rem">Macro F0.5 when keeping records with probability ≥ threshold. Chosen on
+          half A, confirmed on half B.</p>
+        <div id="sweep"></div>
+        <div class="legend"><span><i style="background:var(--accent)"></i>half A (chooses)</span><span><i style="background:var(--match)"></i>half B (reports)</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 RESULTS -->
+<section id="results">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">06 · RESULTS</div>
+      <h2>From 0.921 to 0.990162</h2>
+      <p class="muted">Public leaderboard score after each major version. Every change was first verified on
+        validation half B with a paired bootstrap before it was uploaded.</p>
+    </div>
+    <div class="panel"><div id="lb"></div></div>
+    <div class="tbl-wrap" style="margin-top:20px">
+      <table>
+        <thead><tr><th>Version</th><th>What changed</th><th class="r">Validation (B)</th><th class="r">Public LB</th></tr></thead>
+        <tbody>
+          <tr><td>v1</td><td>One TF-IDF search, 29 features, one LightGBM</td><td class="r">0.936</td><td class="r">0.921</td></tr>
+          <tr><td>v2</td><td>Three searches, 46 features, pruning cascade <span class="pill TP">this demo</span></td><td class="r">0.963</td><td class="r">0.951</td></tr>
+          <tr><td>v4</td><td>Test-like validation, bi-encoder, sibling features</td><td class="r">0.980</td><td class="r">0.965</td></tr>
+          <tr><td>v19</td><td>Leak-free e5 cross-encoders, LightGBM stacker</td><td class="r">0.9900</td><td class="r"></td></tr>
+          <tr><td>v22</td><td>Retrained stack, wider cross-encoder zone</td><td class="r">0.9903</td><td class="r">0.984</td></tr>
+          <tr><td>v26</td><td>bge-reranker and a second e5-base cross-encoder</td><td class="r">0.9909</td><td class="r">0.9855</td></tr>
+          <tr><td>fr7</td><td>Larger stack, seven cross-encoders, decoy offsets, initials copies</td><td class="r">0.991316</td><td class="r">0.985628</td></tr>
+          <tr><td>fr14</td><td>Generator-aware rules for France</td><td class="r">0.991316</td><td class="r">0.989496</td></tr>
+          <tr class="hl"><td>fr22</td><td>Test-like recalibration and structural additions</td><td class="r">+0.00037</td><td class="r"><b>0.990162</b></td></tr>
+          <tr><td><b>fr48</b></td><td>Final submission: fr22 plus 3,744 high-precision additions</td><td class="r"></td><td class="r">builds on 0.990162</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cols" style="margin-top:28px">
+      <div class="panel">
+        <h3>The final submission at a glance</h3>
+        <ul class="clean">
+          <li><b>5,866,818</b> matches over <b>1,732,544</b> test businesses: 3.39 per business, against 3.46 true copies per
+            business in training.</li>
+          <li><b>5.7%</b> of businesses left empty, against 5.6% of training businesses with no copies.</li>
+          <li>US and India on test: <b>0.9913</b>, equal to validation half B. France rose from 0.953 to about 0.979 with
+            the label-free rules.</li>
+          <li>Every match lies inside the 9,365,329 candidate pairs, and both files pass the official validator.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Built entirely on free resources</h3>
+        <p class="muted" style="font-size:.92rem;margin-bottom:10px">No sponsored or institutional compute: free tiers,
+          promotional credits and one of our own laptops.</p>
+        <div class="tbl-wrap"><table>
+          <tbody>
+            <tr><td>AWS EC2 (promotional credits)</td><td>data prep, retrieval, features, LightGBM stack</td></tr>
+            <tr><td>Kaggle 2×T4 (free quota)</td><td>cross-encoder training and scoring</td></tr>
+            <tr><td>Modal H100 (free credits)</td><td>cross-encoder training</td></tr>
+            <tr><td>Lightning AI (free credits)</td><td>Qwen2.5-7B LoRA judges</td></tr>
+            <tr><td>Laptop RTX 4060</td><td>bi-encoder, experiments, this demo</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:20px">
+      <h3>What we learned</h3>
+      <p>Understanding how the data was made paid off more than any single model. After the core model was in place, the
+        largest gains came from questions about the data itself: how many unmatched records the test set holds, what
+        those records look like, and how the generator writes a French copy. A validation set we could trust let us
+        answer those questions without spending leaderboard uploads.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>Team Minutes · Gowrawaram Karthik Koundinya (team leader), Macha Jayanth, M V Abhiram, Hasanabada Sirichandana</div>
+    <pre class="snip">.venv-demo\Scripts\python demo\server.py          # this page, at http://127.0.0.1:8765
+.venv-demo\Scripts\python demo\make_sample.py     # rebuild the demo slice from the training data</pre>
+  </div>
+</footer>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const fmt = (x, d = 4) => x == null ? "" : Number(x).toFixed(d);
+const pct = (x, d = 2) => (100 * x).toFixed(d) + "%";
+const int = x => Number(x).toLocaleString("en-US");
+let R = null;
+
+// ---------- the metric, mirroring src/ber/metric.py ----------
+function f05(tp, fp, fn) {
+  if (tp + fn === 0) return fp === 0 ? 1 : 0;
+  return 1.25 * tp / (1.25 * tp + fp + 0.25 * fn);
+}
+function counts(rows, pred) {
+  let tp = 0, fp = 0, fn = 0;
+  rows.forEach((r, i) => { if (pred[i] && r.true) tp++; else if (pred[i]) fp++; else if (r.true) fn++; });
+  return {tp, fp, fn};
+}
+// expected F0.5 of keeping the top k (port of decide._best_k with miss = 0)
+function pb(p) {
+  const d = new Float64Array(p.length + 1); d[0] = 1;
+  for (let i = 0; i < p.length; i++) { const q = p[i]; for (let j = i + 1; j > 0; j--) d[j] = d[j] * (1 - q) + d[j - 1] * q; d[0] *= 1 - q; }
+  return d;
+}
+function expF(p, k) {
+  if (k === 0) return pb(p)[0];
+  const tp = pb(p.slice(0, k)), fn = pb(p.slice(k)); let v = 0;
+  for (let a = 1; a <= k; a++) {
+    if (!tp[a]) continue;
+    let inner = 0;
+    for (let b = 0; b <= p.length - k; b++) inner += fn[b] * 1.25 * a / (1.25 * a + (k - a) + 0.25 * b);
+    v += tp[a] * inner;
+  }
+  return v;
+}
+
+// ---------- small SVG chart helpers ----------
+function bars(data, {w = 520, h = 200, color = "var(--accent)", hiColor = "var(--match)", label = d => d.label, val = d => d.v, fmtv = v => v, hi = -1} = {}) {
+  const m = {l: 8, r: 8, t: 18, b: 28}, iw = w - m.l - m.r, ih = h - m.t - m.b;
+  const max = Math.max(...data.map(val), 1e-9), bw = iw / data.length;
+  let s = `<svg viewBox="0 0 ${w} ${h}" role="img">`;
+  s += `<line class="grid" x1="${m.l}" x2="${w - m.r}" y1="${m.t + ih}" y2="${m.t + ih}"/>`;
+  data.forEach((d, i) => {
+    const v = val(d), bh = ih * v / max, x = m.l + i * bw + bw * 0.15, y = m.t + ih - bh;
+    s += `<rect x="${x}" y="${y}" width="${bw * 0.7}" height="${bh}" rx="2" fill="${i === hi ? hiColor : color}"/>`;
+    s += `<text x="${x + bw * 0.35}" y="${y - 4}" text-anchor="middle" class="ink">${fmtv(v)}</text>`;
+    s += `<text x="${x + bw * 0.35}" y="${h - 10}" text-anchor="middle">${esc(label(d))}</text>`;
+  });
+  return s + "</svg>";
+}
+function lines(series, xs, {w = 520, h = 220, ymin, ymax, xfmt = x => x, yfmt = y => y.toFixed(3), marks = []} = {}) {
+  const m = {l: 46, r: 12, t: 14, b: 28}, iw = w - m.l - m.r, ih = h - m.t - m.b;
+  const X = i => m.l + iw * i / (xs.length - 1), Y = v => m.t + ih * (1 - (v - ymin) / (ymax - ymin));
+  let s = `<svg viewBox="0 0 ${w} ${h}" role="img">`;
+  for (let k = 0; k <= 4; k++) {
+    const v = ymin + (ymax - ymin) * k / 4;
+    s += `<line class="grid" x1="${m.l}" x2="${w - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${yfmt(v)}</text>`;
+  }
+  xs.forEach((x, i) => { if (xs.length < 16 || i % 2 === 0) s += `<text x="${X(i)}" y="${h - 8}" text-anchor="middle">${esc(xfmt(x))}</text>`; });
+  series.forEach(se => {
+    s += `<polyline fill="none" stroke="${se.color}" stroke-width="2.2" points="${se.ys.map((v, i) => `${X(i)},${Y(v)}`).join(" ")}"/>`;
+    se.ys.forEach((v, i) => s += `<circle cx="${X(i)}" cy="${Y(v)}" r="3" fill="${se.color}"/>`);
+  });
+  marks.forEach(mk => s += `<line x1="${X(mk.i)}" x2="${X(mk.i)}" y1="${m.t}" y2="${m.t + ih}" stroke="var(--muted)" stroke-dasharray="4 4"/><text x="${X(mk.i) + 4}" y="${m.t + 10}" class="ink">${esc(mk.text)}</text>`);
+  return s + "</svg>";
+}
+
+// ---------- 02 dataset ----------
+function renderData() {
+  const st = R.stats;
+  const vals = {s1: int(st.s1), s2: int(st.s2), s3: int(st.s3), true_pairs: int(st.true_pairs), per: (st.true_pairs / st.s1).toFixed(2)};
+  document.querySelectorAll("#data-table [data-k]").forEach(td => td.textContent = vals[td.dataset.k]);
+  const labels = ["0", "1", "2", "3", "4", "5", "6", "7", "8+"];
+  $("#hist-copies").innerHTML = bars(st.copies_hist.map((v, i) => ({label: labels[i], v})), {fmtv: v => int(v), hi: 0, hiColor: "var(--miss)"});
+  const tricky = b => { const c = b.cands, last = c.map(x => x.true).lastIndexOf(true); return c.slice(0, last).some(x => !x.true); };
+  R.showcase.sort((a, b) => tricky(b) - tricky(a));
+  showEx(0);
+}
+let exI = 0;
+function showEx(i) {
+  const S = R.showcase; exI = (i + S.length) % S.length; const b = S[exI];
+  $("#ex-pos").textContent = `${exI + 1} / ${S.length}`;
+  $("#ex-s1").innerHTML = `<div class="rec"><span class="tag s1">S1</span><span class="nm">${esc(b.name)} <span class="muted mono" style="font-weight:400">${esc(b.id)} · ${esc(b.country)}</span></span><span class="ad">${esc(b.addr)}</span></div>`;
+  $("#ex-body").innerHTML = b.cands.map((c, k) => `<tr>
+    <td class="r">${k + 1}</td><td><span class="tag">S${c.src}</span></td>
+    <td class="rec-cell"><div class="nm">${esc(c.name)}</div><div class="ad">${esc(c.addr) || "<i>(no address)</i>"}</div></td>
+    <td><div class="bar ${c.true ? "ok" : "bad"}"><i style="width:${Math.min(100, c.score * 100)}%"></i></div><span class="mono muted">${c.score.toFixed(3)}</span></td>
+    <td>${c.true ? '<span class="pill copy">true copy</span>' : '<span class="pill decoy">not a match</span>'}</td></tr>`).join("");
+}
+$("#ex-prev").onclick = () => showEx(exI - 1);
+$("#ex-next").onclick = () => showEx(exI + 1);
+$("#ex-rand").onclick = () => showEx(Math.floor(Math.random() * R.showcase.length));
+
+// ---------- 03 normaliser ----------
+let nmTimer;
+async function normalise() {
+  const q = new URLSearchParams({name: $("#nm-in").value, addr: $("#ad-in").value});
+  try {
+    const r = await (await fetch("/api/normalize?" + q)).json();
+    $("#nm-out").innerHTML = `<dt>cleaned name</dt><dd>${esc(r.core)}</dd><dt>skeleton</dt><dd><b>${esc(r.skel)}</b></dd><dt>address tokens</dt><dd>${r.addr.map(esc).join(" · ")}</dd>`;
+  } catch { $("#nm-out").innerHTML = "<dt>server</dt><dd>not reachable</dd>"; }
+}
+["#nm-in", "#ad-in"].forEach(s => $(s).addEventListener("input", () => { clearTimeout(nmTimer); nmTimer = setTimeout(normalise, 200); }));
+document.querySelectorAll(".nm-try").forEach(b => b.onclick = () => { $("#nm-in").value = b.dataset.n; normalise(); });
+
+// ---------- 04 live run ----------
+const STAGES = [["prep", "Normalise"], ["retrieve", "Block (TF-IDF)"], ["features", "Features"], ["train", "Train + validate"], ["export", "Export"]];
+function renderStepper(state = {}) {
+  $("#stepper").innerHTML = STAGES.map(([k, name]) => {
+    const s = state.live ? (state[k] || {}) : (R ? {status: "done", t: R.times[k]} : {});
+    const txt = s.status === "run" ? "running…" : s.status === "done" ? (s.t != null ? `${s.t} s` : "done") : "waiting";
+    return `<div class="st ${s.status || ""}"><b>${name}</b><span>${txt}</span></div>`;
+  }).join("");
+}
+const FEAT = {score: "combined TF-IDF score", cos_a: "address TF-IDF cosine", cos_n: "name TF-IDF cosine", rank: "rank among the record's candidates",
+  rank_c: "rank in name+address search", rank_a: "rank in address search", rank_n: "rank in name search", top1: "record's best score",
+  rel_top1: "score ÷ record's best score", gap12: "margin best vs second", top1_a: "record's best address cosine", top1_n: "record's best name cosine",
+  d_top1_a: "gap to best address cosine", d_top1_n: "gap to best name cosine", n_cand: "candidates for the record",
+  s1_in_rank: "rank among records claiming this business", s1_in_n: "records that retrieved this business", s1_best_other: "strongest claim on this business",
+  s1_n_r0: "records whose top pick is this business", name_ratio: "name edit similarity", name_tsr: "name token-set similarity", name_pr: "name partial similarity",
+  name_jw: "name Jaro-Winkler", skel_ratio: "skeleton similarity", skel_tsr: "skeleton token-set similarity", first_tok_eq: "same first word",
+  addr_ratio: "address edit similarity", addr_tsr: "address token-set similarity", addr_pr: "address partial similarity", street_tsr: "street words similarity",
+  street_ratio: "street edit similarity", house_eq: "same house number", house_miss: "house number missing", house_sim: "house number digit similarity",
+  house_absdiff: "house number distance", postal_eq: "same postcode", postal_miss: "postcode missing", num_jac: "shared numbers (Jaccard)",
+  num_inter: "count of shared numbers", q_nonascii: "name in Indian script", q_addr_empty: "record has no address", q_src3: "record from Source 3",
+  len_name1: "business name length", len_name2: "record name length", len_addr1: "business address length", len_addr2: "record address length"};
+function renderResults() {
+  const r = R.report, st = R.stats;
+  $("#run-when").textContent = `(run finished ${R.finished}, ${int(st.val_s1)} held-out businesses)`;
+  const total = Object.values(R.times).reduce((a, b) => a + b, 0);
+  const cards = [
+    [fmt(r.val_f05_at_valA_choice), "macro F0.5, all held-out businesses", "key"],
+    [fmt(Math.max(r.valA_f05_thr, r.valA_f05_efopt)), "half A (chooses settings)"],
+    [fmt(r.valB_f05_at_valA_choice), "half B (untouched)"],
+    [fmt(r.empty_f05), "empty answer for everyone"],
+    [pct(r.retrieval_recall), "retrieval recall"],
+    [fmt(r.oracle_f05), "oracle F0.5 (perfect model)"],
+    [(st.pairs / st.queries).toFixed(1), "candidates per record"],
+    [`${Math.round(total)} s`, "pipeline time on this laptop"],
+  ];
+  $("#metrics").innerHTML = cards.map(([b, s, c]) => `<div class="metric ${c || ""}"><b>${b}</b><span>${s}</span></div>`).join("");
+  const imp = Object.entries(r.importance).slice(0, 12), tot = Object.values(r.importance).reduce((a, b) => a + b, 0);
+  const top = imp[0][1];
+  $("#imp").innerHTML = `<div class="imp">${imp.map(([k, v]) => `<code>${esc(k)}</code><div><div class="bar"><i style="width:${100 * v / top}%"></i></div><small>${(100 * v / tot).toFixed(1)}% · ${esc(FEAT[k] || "")}</small></div>`).join("")}</div>`;
+  renderStepper();
+}
+let poll = null, seen = 0;
+$("#run-btn").onclick = async () => {
+  $("#run-btn").disabled = true; $("#run-msg").textContent = "starting…"; $("#term").textContent = ""; seen = 0;
+  const state = {live: true}; renderStepper(state);
+  const t0 = Date.now();
+  await fetch("/api/run", {method: "POST"});
+  poll = setInterval(async () => {
+    const s = await (await fetch(`/api/status?from=${seen}`)).json();
+    seen = s.n;
+    for (const line of s.lines) {
+      const m = line.match(/^@@stage (\w+) (start|done)(?: ([\d.]+))?/);
+      if (m) { state[m[1]] = {status: m[2] === "start" ? "run" : "done", t: m[3]}; renderStepper(state); }
+      const div = document.createElement("div");
+      div.textContent = line; if (m) div.className = "stg"; if (/Error|Traceback/.test(line)) div.className = "err";
+      $("#term").appendChild(div);
+    }
+    if (s.lines.length) $("#term").scrollTop = $("#term").scrollHeight;
+    $("#run-msg").textContent = s.running ? `running… ${Math.round((Date.now() - t0) / 1000)} s` : "";
+    if (!s.running && s.code !== null) {
+      clearInterval(poll); $("#run-btn").disabled = false;
+      if (s.code === 0) { $("#run-msg").textContent = "done, results updated below"; await load(); }
+      else $("#run-msg").textContent = `run failed (exit ${s.code}); showing the previous results`;
+    }
+  }, 600);
+};
+
+// ---------- 05 metric ----------
+let inList = [], inI = 0, pred = [];
+function curEntity() { return inList[inI]; }
+function filterEntities() {
+  const f = $("#in-filter").value, q = $("#in-search").value.trim().toLowerCase();
+  inList = R.entities.filter(e => {
+    const c = counts(e.rows, e.rows.map(r => r.sel));
+    const ok = {mixed: c.fp > 0 && c.fn > 0, fp: c.fp > 0, fn: c.fn > 0, perfect: e.f05 === 1 && c.tp > 0, empty: !e.rows.some(r => r.true), all: true}[f];
+    return ok && (!q || e.name.toLowerCase().includes(q) || e.id.toLowerCase().includes(q));
+  });
+  showEntity(0);
+}
+function showEntity(i) {
+  if (!inList.length) { $("#in-pos").textContent = "no match"; $("#in-body").innerHTML = ""; $("#in-s1").innerHTML = ""; $("#in-calc").innerHTML = ""; $("#in-ef").innerHTML = ""; $("#in-whatif").innerHTML = ""; return; }
+  inI = (i + inList.length) % inList.length;
+  const e = curEntity(); pred = e.rows.map(r => r.sel);
+  $("#in-pos").textContent = `${inI + 1} / ${inList.length}`;
+  $("#in-s1").innerHTML = `<div class="rec"><span class="tag s1">S1</span><span class="nm">${esc(e.name)} <span class="muted mono" style="font-weight:400">${esc(e.id)} · ${esc(e.country)} · half ${e.half}</span></span><span class="ad">${esc(e.addr)}</span></div>`;
+  drawEntity();
+}
+function drawEntity() {
+  const e = curEntity();
+  $("#in-body").innerHTML = e.rows.length ? e.rows.map((r, i) => {
+    const o = pred[i] ? (r.true ? "TP" : "FP") : (r.true ? "FN" : "TN");
+    const prob = r.p == null ? '<span class="muted" style="font-size:.85rem">not assigned here</span>'
+      : `<div class="bar"><i style="width:${r.p * 100}%"></i></div><span class="mono muted">${r.p.toFixed(3)}</span>`;
+    return `<tr><td><input type="checkbox" data-i="${i}" ${pred[i] ? "checked" : ""} aria-label="predict this record"></td>
+      <td><span class="tag">S${r.src}</span></td>
+      <td class="rec-cell"><div class="nm">${esc(r.name)}</div><div class="ad">${esc(r.addr) || "<i>(no address)</i>"}</div></td>
+      <td>${prob}</td><td>${r.true ? '<span class="pill copy">copy</span>' : '<span class="pill decoy">decoy</span>'}</td>
+      <td><span class="pill ${o}">${o}</span></td></tr>`;
+  }).join("") : `<tr><td colspan="6" class="muted">No record chose this business, and it has no true copies.</td></tr>`;
+  document.querySelectorAll("#in-body input").forEach(cb => cb.onchange = () => { pred[+cb.dataset.i] = cb.checked; drawEntity(); });
+  const {tp, fp, fn} = counts(e.rows, pred), v = f05(tp, fp, fn);
+  const P = tp + fp ? tp / (tp + fp) : 0, Rc = tp + fn ? tp / (tp + fn) : 0;
+  let calc;
+  if (tp + fn === 0) calc = `No true copies → F0.5 = ${fp === 0 ? "1 (empty prediction is correct)" : "0 (any prediction is wrong)"}<br><span class="big">${v.toFixed(4)}</span>`;
+  else calc = `TP = ${tp}   FP = ${fp}   FN = ${fn}<br>F0.5 = 1.25·${tp} / (1.25·${tp} + ${fp} + 0.25·${fn}) = ${(1.25 * tp).toFixed(2)} / ${(1.25 * tp + fp + 0.25 * fn).toFixed(2)}<br>`
+    + `<span class="big">${v.toFixed(4)}</span>   <span class="muted">(precision ${P.toFixed(3)}, recall ${Rc.toFixed(3)})</span>`;
+  $("#in-calc").innerHTML = calc;
+  const wf = [];
+  if (tp + fn > 0) wf.push(`one more wrong match → ${f05(tp, fp + 1, fn).toFixed(4)}`);
+  if (tp > 0) wf.push(`miss one copy instead → ${f05(tp - 1, fp, fn + 1).toFixed(4)}`);
+  if (fp > 0) wf.push(`drop one wrong match → ${f05(tp, fp - 1, fn).toFixed(4)}`);
+  $("#in-whatif").innerHTML = wf.map(t => `<span>${t}</span>`).join("");
+  const ps = e.rows.filter(r => r.p != null).map(r => r.p).sort((a, b) => b - a);
+  if (!ps.length) { $("#in-ef").innerHTML = '<p class="muted">No probabilities to choose from.</p>'; return; }
+  const ef = ps.map((_, k) => expF(ps, k)).concat([expF(ps, ps.length)]);
+  const best = ef.indexOf(Math.max(...ef));
+  $("#in-ef").innerHTML = bars(ef.map((v, k) => ({label: `k=${k}`, v})), {h: 170, fmtv: v => v.toFixed(3), hi: best});
+}
+$("#in-filter").onchange = filterEntities;
+$("#in-search").addEventListener("input", filterEntities);
+$("#in-prev").onclick = () => showEntity(inI - 1);
+$("#in-next").onclick = () => showEntity(inI + 1);
+$("#in-rand").onclick = () => showEntity(Math.floor(Math.random() * inList.length));
+$("#in-reset").onclick = () => showEntity(inI);
+
+function renderMetric() {
+  // verify the JS formula against ber.metric.entity_f05 (computed in Python) for every held-out business
+  const E = R.entities;
+  const bad = E.filter(e => Math.abs(f05(...Object.values(counts(e.rows, e.rows.map(r => r.sel)))) - e.f05) > 1e-12).length;
+  const mean = E.reduce((a, e) => a + e.f05, 0) / E.length;
+  $("#metric-check").innerHTML = `<span class="check ${bad ? "fail" : ""}">${bad ? "✗" : "✓"} Formula on this page matches <code>entity_f05</code> for ${int(E.length - bad)} / ${int(E.length)} businesses · mean = ${mean.toFixed(4)}</span>`;
+  const edges = [0, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1, 1.0001], lab = ["<0.5", "0.5+", "0.6+", "0.7+", "0.8+", "0.9+", "0.95+", "1.0"];
+  const h = lab.map((_, i) => E.filter(e => e.f05 >= edges[i] && e.f05 < edges[i + 1]).length);
+  $("#hist-f05").innerHTML = bars(h.map((v, i) => ({label: lab[i], v})), {fmtv: v => int(v), hi: 7})
+    + `<p class="muted" style="font-size:.88rem;margin-top:6px">Mean of ${int(E.length)} scores = <b>${mean.toFixed(4)}</b> (macro F0.5). ${int(h[7])} businesses are perfect.</p>`;
+  const r = R.report, ths = [];
+  for (let t = 0.30; t < 0.951; t += 0.05) ths.push(t.toFixed(2));
+  const A = ths.map(t => r[`valA_thr${t}`]), B = ths.map(t => r[`valB_diag_thr${t}`]);
+  const all = A.concat(B), lo = Math.min(...all), hi = Math.max(...all), pad = (hi - lo) * 0.15 + 1e-4;
+  const ci = ths.indexOf(Number(r.best.thr ?? r.valA_best_thr).toFixed(2));
+  $("#sweep").innerHTML = lines([{ys: A, color: "var(--accent)"}, {ys: B, color: "var(--match)"}], ths,
+    {ymin: lo - pad, ymax: hi + pad, yfmt: y => y.toFixed(3), marks: ci >= 0 ? [{i: ci, text: `chosen ${ths[ci]}`}] : []})
+    + `<p class="muted" style="font-size:.88rem;margin-top:6px">On this slice the plain threshold (${r.valA_f05_thr.toFixed(4)} on A) edged out the expected-F0.5 rule (${r.valA_f05_efopt.toFixed(4)}). In the full system, with calibrated probabilities from the stacker, the expected-F0.5 rule won.</p>`;
+}
+fetch("/api/code?f=metric").then(r => r.text()).then(t => $("#code-metric").textContent = t).catch(() => {});
+
+// ---------- 06 leaderboard ----------
+(function renderLB() {
+  const v = [["v1", .921], ["v2", .951], ["v4", .965], ["v22", .984], ["v26", .9855], ["fr7", .985628], ["fr14", .989496], ["fr22", .990162]];
+  const w = 900, h = 260, m = {l: 50, r: 70, t: 24, b: 30}, iw = w - m.l - m.r, ih = h - m.t - m.b, lo = 0.915, hi = 0.995;
+  const X = i => m.l + iw * i / (v.length - 1), Y = s => m.t + ih * (1 - (s - lo) / (hi - lo));
+  let s = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Leaderboard progression">`;
+  [0.92, 0.94, 0.96, 0.98].forEach(t => s += `<line class="grid" x1="${m.l}" x2="${w - m.r}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${m.l - 8}" y="${Y(t) + 4}" text-anchor="end">${t.toFixed(2)}</text>`);
+  s += `<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="${v.map(([, y], i) => `${X(i)},${Y(y)}`).join(" ")}"/>`;
+  v.forEach(([n, y], i) => {
+    const last = i === v.length - 1;
+    s += `<circle cx="${X(i)}" cy="${Y(y)}" r="${last ? 6 : 4}" fill="${last ? "var(--match)" : "var(--accent)"}"/>`;
+    s += `<text x="${X(i) + (i ? 0 : 10)}" y="${Y(y) - 10}" text-anchor="${i ? "middle" : "start"}" class="ink" style="font-weight:${last ? 700 : 400}">${y}</text>`;
+    s += `<text x="${X(i)}" y="${h - 8}" text-anchor="middle">${n}</text>`;
+  });
+  $("#lb").innerHTML = s + "</svg>";
+})();
+
+async function load() {
+  try {
+    const res = await fetch("/api/results");
+    if (!res.ok) throw new Error("no results");
+    R = await res.json();
+  } catch {
+    $("#metrics").innerHTML = '<p class="muted">No completed run yet. Press "Run pipeline" above.</p>';
+    renderStepper(); return;
+  }
+  renderData(); renderResults(); renderMetric(); filterEntities();
+}
+renderStepper(); normalise(); load();
+</script>
+</body>
+</html>

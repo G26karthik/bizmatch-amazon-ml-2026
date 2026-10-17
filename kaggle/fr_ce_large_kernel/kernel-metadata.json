@@ -1,0 +1,4 @@
+{"id": "YOUR_KAGGLE_USERNAME/aml2026-fr-ce-large", "title": "aml2026-fr-ce-large", "code_file": "fr_ce_score.py",
+ "language": "python", "kernel_type": "script", "is_private": true, "enable_gpu": true, "enable_internet": true,
+ "machine_shape": "NvidiaTeslaT4", "dataset_sources": ["YOUR_KAGGLE_USERNAME/aml2026-fr-ce"],
+ "kernel_sources": ["YOUR_KAGGLE_USERNAME/aml2026-cross-encoder-large"]}

@@ -1,0 +1,3 @@
+{"id": "YOUR_KAGGLE_USERNAME/aml2026-score-test", "title": "aml2026-score-test", "code_file": "score_test.py",
+ "language": "python", "kernel_type": "script", "is_private": true, "enable_gpu": true, "enable_internet": false,
+ "dataset_sources": ["YOUR_KAGGLE_USERNAME/aml2026-pruned-test"], "kernel_sources": ["YOUR_KAGGLE_USERNAME/aml2026-encode-test"]}

@@ -1,0 +1,12 @@
+# Neural encoder (GPU). Install PyTorch separately for your CUDA version:
+#   pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+sentence-transformers==6.1.0
+transformers==5.17.0
+tokenizers==0.23.2
+accelerate==1.15.0
+datasets==5.0.1
+huggingface-hub==1.33.0
+safetensors==0.8.0
+numpy==2.5.3
+polars==1.44.2
+pyarrow==25.0.1

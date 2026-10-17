@@ -1,0 +1,3 @@
+{"id": "YOUR_KAGGLE_USERNAME/aml2026-cross-encoder-bgefull", "title": "aml2026-cross-encoder-bgefull", "code_file": "ce_train_score.py",
+ "language": "python", "kernel_type": "script", "is_private": true, "enable_gpu": true, "enable_internet": true,
+ "machine_shape": "NvidiaTeslaT4", "dataset_sources": ["YOUR_KAGGLE_USERNAME/aml2026-ce-data-big", "YOUR_KAGGLE_USERNAME/aml2026-ce-extra", "YOUR_KAGGLE_USERNAME/aml2026-fr-ce"]}

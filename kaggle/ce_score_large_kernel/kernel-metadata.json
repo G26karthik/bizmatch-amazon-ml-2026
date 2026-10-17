@@ -1,0 +1,4 @@
+{"id": "YOUR_KAGGLE_USERNAME/aml2026-ce-score-extra-large", "title": "aml2026-ce-score-extra-large", "code_file": "ce_score_extra.py",
+ "language": "python", "kernel_type": "script", "is_private": true, "enable_gpu": true, "enable_internet": true,
+ "machine_shape": "NvidiaTeslaT4", "dataset_sources": ["YOUR_KAGGLE_USERNAME/aml2026-ce-extra"],
+ "kernel_sources": ["YOUR_KAGGLE_USERNAME/aml2026-cross-encoder-large"]}

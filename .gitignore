@@ -1,0 +1,30 @@
+# competition data is not redistributable
+data/
+local_data/
+dataset/
+student_resource/
+*.tsv
+*.parquet
+*.npy
+*.npz
+*.zip
+*.pdf
+
+# secrets
+.env*
+*.env.txt
+kaggle.json
+*.pem
+
+# environments, caches, outputs
+.venv*/
+venv/
+__pycache__/
+.pytest_cache/
+hf_cache/
+logs/
+*.log
+output/
+dist/
+submission_build/
+work/

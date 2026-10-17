@@ -1,0 +1,23 @@
+import polars as pl, sys
+C = sys.argv[1]; R = sys.argv[2]
+pl.Config.set_tbl_rows(60); pl.Config.set_tbl_width_chars(250)
+te = pl.read_parquet(f"{C}/test_US_sig_sub.parquet")
+print("TEST k_sub distribution (row-normalised) by max_csize")
+x = te.with_columns(pl.col("max_csize").clip(0, 3).alias("cs"), pl.col("k_sub").clip(0, 8).alias("k")).group_by(["cs", "k"]).len()
+x = x.with_columns((pl.col("len") / pl.col("len").sum().over("cs")).round(4).alias("f")).pivot(on="k", index="cs", values="f", sort_columns=True).sort("cs")
+print(x)
+tr = pl.read_parquet(f"{C}/train_US_sig.parquet")
+gt = pl.read_csv(f"{R}/train_ground_truth.tsv", separator="\t", quote_char=None, infer_schema=False).fill_null("")
+gt = gt.with_columns(pl.when(pl.col("matched_entity_ids") == "").then(0).otherwise(pl.col("matched_entity_ids").str.count_matches(",") + 1).alias("k"))
+tr = tr.join(gt.select(pl.col("source1_entity_id").alias("s1"), "k"), on="s1")
+print("TRAIN true k distribution by max_csize")
+x = tr.with_columns(pl.col("max_csize").clip(0, 3).alias("cs"), pl.col("k").clip(0, 8).alias("kk")).group_by(["cs", "kk"]).len()
+x = x.with_columns((pl.col("len") / pl.col("len").sum().over("cs")).round(4).alias("f")).pivot(on="kk", index="cs", values="f", sort_columns=True).sort("cs")
+print(x)
+# test decoy records: source mix and whether cluster members are in same source
+d = pl.read_parquet(f"{C}/test_US_decrec.parquet").with_columns(pl.col("entity_id").str.slice(0, 2).alias("src"))
+cs = d.group_by(["s1", "h"]).agg(pl.len().alias("cs"), (pl.col("src") == "S2").sum().alias("n2"))
+print("test cluster size x #S2 members:", cs.group_by(["cs", "n2"]).len().sort(["cs", "n2"]).to_dicts())
+d = pl.read_parquet(f"{C}/train_US_decrec.parquet").with_columns(pl.col("entity_id").str.slice(0, 2).alias("src"))
+cs = d.group_by(["s1", "h"]).agg(pl.len().alias("cs"), (pl.col("src") == "S2").sum().alias("n2"))
+print("train cluster size x #S2 members:", cs.group_by(["cs", "n2"]).len().sort(["cs", "n2"]).to_dicts())

@@ -1,0 +1,11 @@
+polars
+pyarrow
+numpy
+scipy
+scikit-learn
+lightgbm
+rapidfuzz
+unidecode
+pytest
+sparse_dot_topn
+numba
