@@ -1,17 +1,55 @@
-# Doppelganger
+<h1 align="center">BizMatch</h1>
 
-### Amazon ML Challenge 2026 · Rank 38 of 32,000+ teams · Team Minutes
+<p align="center"><b>Amazon ML Challenge 2026 · 38th of 32,000+ teams</b></p>
 
-> *Every business has look-alikes. Some are its real copies; the rest are decoys built to fool you. Doppelganger tells them apart.*
+<p align="center">Finds every real copy of a business across 10 million noisy records, and rejects the decoys built to look like them.</p>
 
-**Matching 10 million noisy business records to 1.7 million reference businesses across the US, India and an unlabeled France, with a retrieval → gradient-boosting → cross-encoder → exact-F0.5 pipeline built entirely on free compute.**
+<p align="center">
+  <img src="https://img.shields.io/badge/Amazon_ML_Challenge_2026-Rank_38_%2F_32%2C000%2B-FF9900?style=for-the-badge&logo=amazon&logoColor=white" alt="Amazon ML Challenge 2026: rank 38 of 32,000+ teams">
+  <img src="https://img.shields.io/badge/Macro_F0.5-0.990-2ea44f?style=for-the-badge" alt="Macro F0.5 0.990 on the public leaderboard">
+  <br>
+  <img src="https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white" alt="Python 3.12">
+  <img src="https://img.shields.io/badge/LightGBM-cascade-9cf" alt="LightGBM">
+  <img src="https://img.shields.io/badge/cross--encoders-7-blueviolet" alt="7 cross-encoders">
+  <img src="https://img.shields.io/badge/compute-free_tiers_only-lightgrey" alt="Free-tier compute">
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT license">
+</p>
 
-![Amazon ML Challenge 2026](https://img.shields.io/badge/Amazon%20ML%20Challenge%202026-Rank%2038%20%2F%2032%2C000%2B%20teams-FF9900)
-![Public LB](https://img.shields.io/badge/Macro%20F0.5-0.990%20(public%20LB)-2ea44f)
-![Python](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+<p align="center">
+  <a href="#the-problem">Problem</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#leaderboard-progression-public-lb">Leaderboard</a> ·
+  <a href="#what-didnt-work-and-what-we-learned">Lessons</a> ·
+  <a href="#how-to-run">Run it</a> ·
+  <a href="docs/APPROACH.md">Full write-up</a>
+</p>
 
-Team **Minutes**: Gowrawaram Karthik Koundinya (team lead), Macha Jayanth, M V Abhiram, Hasanabada Sirichandana.
+---
+
+## What it does
+
+Three sources describe the same businesses with **no shared IDs**: just a name, an address and a country, full of typos, abbreviations, Indic scripts and reordered words. Mixed in are **decoys**: records engineered to look like a business without being it.
+
+```text
+Source 1  Bluebird Garden Supply Corp   42 Example Lane, Austin TX
+Source 2  BLUEBIRD GARDEN SUPPLY        42 Example Ln Austin           ✅ copy
+Source 3  Bluebird Garden Supply        44 Example Lane, Austin TX     ❌ decoy (house number shifted)
+```
+<sub>Illustrative, fictional records. The competition data is not redistributable.</sub>
+
+BizMatch decides, for each of **1.7M businesses**, exactly which of **~10M records** are its real copies. It covers the US and India, plus **France with no training labels at all**. Precision counts 4× more than recall (F0.5).
+
+## Results
+
+```mermaid
+xychart-beta
+    title "Public leaderboard, macro F0.5"
+    x-axis [v1, v2, v3, v4, v22, v26, fr7, fr14, fr22]
+    y-axis "F0.5" 0.91 --> 1.0
+    line [0.921, 0.951, 0.948, 0.965, 0.984, 0.9855, 0.9856, 0.9895, 0.9902]
+```
+
+**Team Minutes:** Gowrawaram Karthik Koundinya (team lead), Macha Jayanth, M V Abhiram, Hasanabada Sirichandana.
 
 ---
 
@@ -31,6 +69,15 @@ The three ideas that mattered most:
 1. **Solve the reverse problem.** Every Source 2/3 record belongs to *at most one* Source 1 business (true for all 7.64M training pairs), so we ask each record "which business are you a copy of, if any?" and group the answers.
 2. **A validation set that behaves like the test set** — in how many unmatched records it holds *and* in what kind they are. Every decision was tuned on it, and it agreed with the test set to four decimals for US + India.
 3. **Model the data generator, not just the data.** France had no labels; we derived rules from how the generator writes copies and decoys and confirmed each with two independent label-free statistical tests.
+
+### Reusable beyond the challenge
+
+Any record-linkage or deduplication job (customer master data, supplier lists, product catalogs) can lift these pieces:
+
+- **`ber/decide.py`:** exact expected-F0.5 subset selection per entity via a Poisson-binomial dynamic program. Use it in place of a global threshold whenever your metric is averaged per entity; other F-beta values only need the β constants changed.
+- **`ber/normalize.py`:** multilingual name and address normalization: Indic-script transliteration, abbreviation maps, and consonant skeletons that make transliterations agree.
+- **`ber/metric.py`:** a tested macro-F0.5-per-entity scorer.
+- **The validation recipe:** split by entity, then match the test set's density *and* the kind of unmatched records it holds. That is what made validation track the leaderboard.
 
 ---
 
