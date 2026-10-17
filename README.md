@@ -1,4 +1,8 @@
-# Business Entity Resolution at Scale — Amazon ML Challenge 2026
+# Doppelganger
+
+### Amazon ML Challenge 2026 · Rank 38 of 32,000+ teams · Team Minutes
+
+> *Every business has look-alikes. Some are its real copies; the rest are decoys built to fool you. Doppelganger tells them apart.*
 
 **Matching 10 million noisy business records to 1.7 million reference businesses across the US, India and an unlabeled France, with a retrieval → gradient-boosting → cross-encoder → exact-F0.5 pipeline built entirely on free compute.**
 
