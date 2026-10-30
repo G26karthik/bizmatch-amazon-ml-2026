@@ -5,7 +5,7 @@
 <p align="center">Finds every real copy of a business across 10 million noisy records, and rejects the decoys built to look like them.</p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Amazon_ML_Challenge_2026-Rank_38_%2F_32%2C000%2B-FF9900?style=for-the-badge&logo=amazon&logoColor=white" alt="Amazon ML Challenge 2026: rank 38 of 32,000+ teams">
+  <img src="https://img.shields.io/badge/Amazon_ML_Challenge_2026-38th_of_32%2C000%2B_teams-FF9900?style=for-the-badge&logo=amazon&logoColor=white" alt="Amazon ML Challenge 2026: rank 38 of 32,000+ teams">
   <img src="https://img.shields.io/badge/Macro_F0.5-0.990-2ea44f?style=for-the-badge" alt="Macro F0.5 0.990 on the public leaderboard">
   <br>
   <img src="https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white" alt="Python 3.12">
@@ -57,7 +57,7 @@ xychart-beta
 
 | | |
 |---|---|
-| **Final standing** | **Rank 38 of 32,000+ teams** (top 50; the team was invited to an Applied Scientist Intern interview) |
+| **Final standing** | **38th of 32,000+ teams** (top 50; the team was invited to an Applied Scientist Intern interview) |
 | **Best public leaderboard score** | **0.990162** macro F0.5 (from 0.921 for our first submission) |
 | **Validation (held-out half B)** | 0.991316 for the stacked model; US + India measured on test at 0.9913, the same as validation |
 | **Candidate recall** | 98.75% of true matches kept with ~5.4 candidates per business (9.37M scored test pairs) |
@@ -184,7 +184,7 @@ The resulting rules lifted the leaderboard by +0.0039, matching the gain the mar
 | fr45 | 0.990128 ↓ | +9,245 rule-based additions — slightly *worse* (see lessons) |
 | fr48 (final) | — | fr22 + 3,744 high-precision additions for records the calibrated model had never scored |
 
-**Final standing: rank 38 of 32,000+ teams** (top 50 confirmed by the organisers).
+**Final standing: 38th of 32,000+ teams** (top 50 confirmed by the organisers).
 
 ---
 
